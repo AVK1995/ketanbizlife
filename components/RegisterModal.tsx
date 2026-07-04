@@ -220,6 +220,11 @@ export function RegisterModal({ config }: Props) {
     const utm = readUtmFromStorage(config.funnel.sessionStorageKey);
     const fbc = readCookie("_fbc");
     const fbp = readCookie("_fbp");
+    // In-app browsers (Instagram/FB webview) often block the pixel's _fbc
+    // cookie, so we also forward the raw fbclid captured from the landing URL
+    // (persisted by UtmTracker). The register route rebuilds _fbc from it when
+    // the cookie is empty — keeps EMQ high for paid mobile-ad traffic.
+    const fbclid = utm.fbclid;
     const leadId = makeLeadId();
 
     try {
@@ -235,6 +240,7 @@ export function RegisterModal({ config }: Props) {
           utm,
           fbc,
           fbp,
+          fbclid,
           userAgent:
             typeof navigator !== "undefined" ? navigator.userAgent : undefined,
           eventSourceUrl:

@@ -41,7 +41,8 @@ export async function POST(
     );
   }
 
-  const { leadId, customer, utm, fbc, fbp, userAgent, eventSourceUrl } = body;
+  const { leadId, customer, utm, fbc, fbp, fbclid, userAgent, eventSourceUrl } =
+    body;
 
   if (!leadId || typeof leadId !== "string") {
     return NextResponse.json(
@@ -78,6 +79,18 @@ export async function POST(
   const clientIp = extractClientIp(request);
   const clientUserAgent =
     (userAgent ?? request.headers.get("user-agent") ?? "").slice(0, 512);
+
+  // fbc recovery for Meta in-app browsers (Instagram/FB webview). The pixel
+  // often can't write the `_fbc` cookie there, so the browser sends fbc="".
+  // The landing URL still carries `?fbclid=…` (persisted by UtmTracker), and
+  // Meta matches a server-rebuilt `fb.1.{ms}.{fbclid}` identically to a
+  // pixel-written one — recovering attribution for paid mobile-ad traffic.
+  const resolvedFbc =
+    fbc && fbc.length > 0
+      ? fbc
+      : fbclid && fbclid.length > 0
+        ? `fb.1.${Date.now()}.${fbclid}`
+        : "";
   const resolvedEventSourceUrl =
     eventSourceUrl && eventSourceUrl.startsWith("http")
       ? eventSourceUrl
@@ -111,7 +124,7 @@ export async function POST(
       kind: clientConfig.capi.kind,
       clientIp,
       clientUserAgent,
-      fbc,
+      fbc: resolvedFbc,
       fbp,
     });
   }
@@ -128,7 +141,7 @@ export async function POST(
     capiAttempted,
     capiOutcome,
     capiSkipReason,
-    fbc: fbc ?? "",
+    fbc: resolvedFbc,
     fbp: fbp ?? "",
     clientIpAddress: clientIp,
     clientUserAgent,

@@ -39,6 +39,10 @@ export interface RegisterRequest {
   fbc?: string;
   /** Facebook browser-id cookie (forwarded for the server CAPI fire) */
   fbp?: string;
+  /** Raw fbclid from the landing URL (persisted via UTM). The register route
+   *  reconstructs `_fbc` from it when the pixel didn't set the cookie — the
+   *  common case for Instagram/Facebook in-app browsers. */
+  fbclid?: string;
   /** navigator.userAgent at submit time (forwarded for the server CAPI fire) */
   userAgent?: string;
   /** window.location.href at submit time (Meta CAPI event_source_url) */
